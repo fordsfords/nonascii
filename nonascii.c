@@ -1,6 +1,6 @@
 /* nonascii.c */
 /*
-# This code and its documentation is Copyright 2021 Steven Ford, http://geeky-boy.com
+# This code and its documentation is Copyright 2021, 2024 Steven Ford, http://geeky-boy.com
 # and licensed "public domain" style under Creative Commons "CC0": http://creativecommons.org/publicdomain/zero/1.0/
 # To the extent possible under law, the contributors to this project have
 # waived all copyright and related or neighboring rights to this work.
@@ -125,14 +125,14 @@ void process_open_file(FILE *in_fd, char *in_file)
   static char buffer[BUFFER_SZ];
   size_t numbytes_read;
   long line_num;
-  long char_offset;
+  long column_num;
   int num_nonascii;
   int has_cr;
   int num_unusual;
   int done;
 
   line_num = 1;
-  char_offset = 1;
+  column_num = 0;
   num_nonascii = 0;
   has_cr = 0;
   num_unusual = 0;
@@ -146,18 +146,18 @@ void process_open_file(FILE *in_fd, char *in_file)
 
     for (i = 0; i < numbytes_read; i++) {
       char c = buffer[i];
-      char_offset++;
+      column_num++;
 
       if ((c & 0x80) != 0) {  /* if non-ascii print report. */
         if (o_num_nonascii == -1 || num_nonascii < o_num_nonascii) {
           printf("nonascii: %s:%ld[%ld]: 0x%02hhx\n",
-              in_file, line_num, char_offset, c);
+              in_file, line_num, column_num, c);
         }
         num_nonascii ++;
       }
       else if (c == '\n') {
         line_num++;
-        char_offset = 1;
+        column_num = 0;
       }
       else if (c == '\r') {
         has_cr = 1;
