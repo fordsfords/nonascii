@@ -20,21 +20,25 @@ egrep "^[Ww]here:" x.out >/dev/null ; ASSRT "$? -eq 0"
 
 xxd -r <short.hex >x.short
 ./nonascii >x.out x.short ; ASSRT "$? -eq 0"
-LINES=`wc -l <x.out`; ASSRT "$LINES -eq 2"
+LINES=`wc -l <x.out`; ASSRT "$LINES -eq 3"
 
 xxd -r <short.hex >x.short
 ./nonascii -n 2 >x.out x.short ; ASSRT "$? -eq 0"
-LINES=`wc -l <x.out`; ASSRT "$LINES -eq 2"
+LINES=`wc -l <x.out`; ASSRT "$LINES -eq 3"
 
 xxd -r <short.hex >x.short
 ./nonascii -n 1 >x.out x.short ; ASSRT "$? -eq 0"
-LINES=`wc -l <x.out`; ASSRT "$LINES -eq 1"
+LINES=`wc -l <x.out`; ASSRT "$LINES -eq 2"
 
 xxd -r <long.hex >x.long
 ./nonascii >x.out x.long ; ASSRT "$? -eq 0"
-LINES=`wc -l <x.out`; ASSRT "$LINES -eq 1"
+LINES=`wc -l <x.out`; ASSRT "$LINES -eq 2"
 
 ./nonascii -n 1 >x.out <x.long x.short - x.short; ASSRT "$? -eq 0"
-LINES=`wc -l <x.out`; ASSRT "$LINES -eq 3"
+LINES=`wc -l <x.out`; ASSRT "$LINES -eq 6"
+
+xxd -r <dos.hex >x.dos
+./nonascii -n 1 >x.out x.dos ; ASSRT "$? -eq 0"
+LINES=`wc -l <x.out`; ASSRT "$LINES -eq 4"
 
 echo "Success: $ASSERTS asserts"

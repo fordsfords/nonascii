@@ -71,10 +71,10 @@
 } while (0)
 
 /* Options */
-int o_num_reports = 0;  /* -n */
+int o_num_nonascii = -1;  /* -n */
 
 
-char usage_str[] = "Usage: nonascii [-h] [-n num_reports] [--] [in_file ...]";
+char usage_str[] = "Usage: nonascii [-h] [-n num_nonascii] [--] [in_file ...]";
 void usage_err(char *msg) {
   if (msg) fprintf(stderr, "\n%s\n\n", msg);
   fprintf(stderr, "%s\n", usage_str);
@@ -86,7 +86,7 @@ void help() {
     "where:\n"
     "  -h - print help\n"
     "  -- - indicates end of options.\n"
-    "  -n num_reports - only print up to 'num_reports' lines of output\n"
+    "  -n num_nonascii - only print up to 'num_nonascii' lines of output\n"
     "    for each input file. 0 means no limit (infinite).\n"
     "  in_file - zero or more text files. If none, use STDIN. A file named\n"
     "    '-' indicates to read standard input.\n"
@@ -106,11 +106,10 @@ void parse_cmdline(int argc, char **argv)
         help();
         break;
       case '-':
-printf("???dash\n");
         return;  /* Done processing options. */
         break;
       case 'n':
-        SAFE_ATOI(optarg, o_num_reports);
+        SAFE_ATOI(optarg, o_num_nonascii);
         break;
       default:
         usage_err(NULL);
@@ -127,12 +126,16 @@ void process_open_file(FILE *in_fd, char *in_file)
   size_t numbytes_read;
   long line_num;
   long char_offset;
-  int num_reports;
+  int num_nonascii;
+  int has_cr;
+  int num_unusual;
   int done;
 
   line_num = 1;
   char_offset = 1;
-  num_reports = 0;
+  num_nonascii = 0;
+  has_cr = 0;
+  num_unusual = 0;
   done = 0;
   while (!done) {
     size_t i;
@@ -146,19 +149,35 @@ void process_open_file(FILE *in_fd, char *in_file)
       char_offset++;
 
       if ((c & 0x80) != 0) {  /* if non-ascii print report. */
-        printf("nonascii: %s:%ld[%ld]: 0x%02hhx\n",
-            in_file, line_num, char_offset, c);
-        num_reports ++;
-        if (o_num_reports > 0 && num_reports >= o_num_reports) {
-          return;  /* Reached limit of reports, done with file. */
+        if (o_num_nonascii == -1 || num_nonascii < o_num_nonascii) {
+          printf("nonascii: %s:%ld[%ld]: 0x%02hhx\n",
+              in_file, line_num, char_offset, c);
         }
+        num_nonascii ++;
       }
       else if (c == '\n') {
         line_num++;
         char_offset = 1;
       }
+      else if (c == '\r') {
+        has_cr = 1;
+      }
+      else if (c == '\t') {
+        /* tab. */
+      }
+      else if (c >= ' ' && c <= '~') {
+        /* Printable ascii. */
+      }
+      else {
+        num_unusual++;
+      }
     }  /* for i */
   }  /* while !done */
+
+  printf("%s summary: %d non-ascii\n", in_file, num_nonascii);
+  if (has_cr) { printf("Has cr (dos)\n"); }
+  if (num_unusual > 0) { printf("Has %d unusual non-printable ascii\n", num_unusual); }
+
   if (ferror(in_fd)) {
     fprintf(stderr, "Error reading file '%s'\n", in_file);
   }
